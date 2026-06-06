@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { User, Settings, LogOut } from 'lucide-react';
+import { User, Settings, LogOut, Menu } from 'lucide-react';
 
 const AdminLayout = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -20,11 +21,19 @@ const AdminLayout = () => {
     };
   }, []);
   return (
-    <div className="flex min-h-screen bg-accent font-sans text-gray-900 antialiased">
-      <Sidebar />
+    <div className="flex min-h-screen bg-accent font-sans text-gray-900 antialiased overflow-hidden">
+      <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 z-10 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-800">Admin Dashboard</h2>
+        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-4 md:px-8 z-10 shrink-0">
+          <div className="flex items-center gap-3">
+            <button 
+              className="md:hidden text-gray-600 hover:text-prime focus:outline-none"
+              onClick={() => setIsMobileOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+            <h2 className="text-lg font-semibold text-gray-800">Admin Dashboard</h2>
+          </div>
           <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
             <button 
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}

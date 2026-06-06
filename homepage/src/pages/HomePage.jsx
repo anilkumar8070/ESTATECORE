@@ -1,8 +1,9 @@
-import React from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { ChevronRight, Home, Building, MapPin, Search, ArrowRight, ArrowUpRight, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { ChevronRight, Home, Building, MapPin, Search, ArrowRight, ArrowUpRight, Star, Menu, X } from 'lucide-react';
 
 const HomePage = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
   const y1 = useTransform(scrollYProgress, [0, 1], [0, -50]);
   const y2 = useTransform(scrollYProgress, [0, 1], [0, 50]);
@@ -49,12 +50,60 @@ const HomePage = () => {
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-prime text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-prime/20"
+            className="hidden md:block bg-prime text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-prime/20"
           >
             Get Started
           </motion.button>
+          <button 
+            className="md:hidden w-10 h-10 flex items-center justify-center bg-gray-100 text-prime rounded-full focus:outline-none hover:bg-gray-200 transition-colors"
+            onClick={() => setIsMenuOpen(true)}
+          >
+            <Menu size={20} />
+          </button>
         </div>
       </motion.nav>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 z-[60] bg-white/95 backdrop-blur-xl flex flex-col p-6 overflow-hidden"
+          >
+            <div className="flex justify-between items-center mb-10">
+              <div className="text-xl font-black tracking-tighter flex items-center gap-2">
+                <div className="w-8 h-8 bg-prime text-gold rounded-full flex items-center justify-center">
+                  <Home size={16} />
+                </div>
+                ESTATE<span className="text-gold font-light">CORE</span>
+              </div>
+              <button 
+                className="w-10 h-10 flex items-center justify-center bg-gray-100 text-prime rounded-full focus:outline-none hover:bg-gray-200 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-6 text-3xl font-black mt-8">
+              {['Buy', 'Rent', 'Sell', 'Agents'].map((item) => (
+                <button key={item} className="text-left text-gray-900 hover:text-gold transition-colors">{item}</button>
+              ))}
+            </div>
+
+            <div className="mt-auto flex flex-col gap-4">
+              <button className="text-lg font-bold text-gray-600 hover:text-prime transition-colors py-3">
+                Login
+              </button>
+              <button className="bg-prime text-white px-6 py-4 rounded-full text-lg font-bold hover:bg-gray-800 transition-colors shadow-lg shadow-prime/20">
+                Get Started
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pt-32 md:pt-40">
         
