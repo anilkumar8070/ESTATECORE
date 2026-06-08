@@ -1,0 +1,20 @@
+{
+  "name": "estatecore-monorepo",
+  "private": true,
+  "packageManager": "npm@11.12.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@estatecore/api",
+    "dev:web": "npm run dev --workspace=@estatecore/web",
+    "dev:admin": "npm run dev --workspace=@estatecore/admin",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  }
+}

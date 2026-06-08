@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f3f3f3;
+  color: #030303;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
