@@ -99,7 +99,7 @@ export default function PropertyDetails() {
               ))}
             </div>
           </div>
-
+            
           {/* Specifications Grid */}
           <div className="bg-[#111]/40 backdrop-blur-xl border border-white/5 rounded-3xl p-8 md:p-10 shadow-lg">
             <h3 className="text-3xl font-bold text-[#f5f5f5] mb-8 tracking-tight">Property Overview</h3>
