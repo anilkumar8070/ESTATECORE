@@ -5,16 +5,21 @@ import api from '../api';
 const UsersManager = () => {
   const [users, setUsers] = useState([]);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const { data } = await api.get('/users');
       setUsers(data);
     } catch (error) {
       console.error('Failed to fetch users', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,11 +128,20 @@ const UsersManager = () => {
                 </td>
               </tr>
             ))}
-            {users.length === 0 && (
+            {loading ? (
+              <tr>
+                <td colSpan="5" className="py-8 text-center text-gray-500">
+                  <div className="flex justify-center items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-t-gold animate-spin"></div>
+                    Loading users...
+                  </div>
+                </td>
+              </tr>
+            ) : users.length === 0 ? (
               <tr>
                 <td colSpan="5" className="py-8 text-center text-gray-500">No users found.</td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>

@@ -1,9 +1,13 @@
-import React from 'react';
-import { properties } from '../data/dummy';
+import React, { useState, useEffect } from 'react';
 import { Check, X } from 'lucide-react';
+import api from '../api';
 
 export default function Compare() {
-  const compareList = properties.slice(0, 3);
+  const [compareList, setCompareList] = useState([]);
+
+  useEffect(() => {
+    api.get('/properties').then(({ data }) => setCompareList(data.slice(0, 3))).catch(console.error);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -18,15 +22,15 @@ export default function Compare() {
             <tr>
               <th className="p-4 bg-[#111] border border-[#222] text-left text-gray-400 font-medium rounded-tl-2xl w-48">Features</th>
               {compareList.map((property, idx) => (
-                <th key={property.id} className={`p-4 bg-[#111] border border-[#222] text-center ${idx === compareList.length - 1 ? 'rounded-tr-2xl' : ''}`}>
-                  <div className="relative h-32 rounded-lg overflow-hidden mb-3">
-                    <img src={property.image} alt={property.title} className="w-full h-full object-cover" />
+                <th key={property._id} className={`p-4 bg-[#111] border border-[#222] text-center ${idx === compareList.length - 1 ? 'rounded-tr-2xl' : ''}`}>
+                  <div className="relative h-32 rounded-lg overflow-hidden mb-3 bg-gray-800">
+                    <img src={property.imageUrl || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800"} alt={property.title} className="w-full h-full object-cover" />
                     <button className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:text-red-500">
                       <X size={14} />
                     </button>
                   </div>
                   <h3 className="text-[#f5f5f5] font-semibold text-sm leading-tight">{property.title}</h3>
-                  <p className="text-[#c5a059] font-bold mt-1">${property.price.toLocaleString()}</p>
+                  <p className="text-[#c5a059] font-bold mt-1">${property.price ? property.price.toLocaleString() : property.price}</p>
                 </th>
               ))}
             </tr>
@@ -35,37 +39,37 @@ export default function Compare() {
             <tr>
               <td className="p-4 border border-[#222] bg-[#0a0a0a] text-gray-400">Location</td>
               {compareList.map(property => (
-                <td key={property.id} className="p-4 border border-[#222] bg-[#0a0a0a] text-[#f5f5f5] text-center">{property.location}</td>
+                <td key={property._id} className="p-4 border border-[#222] bg-[#0a0a0a] text-[#f5f5f5] text-center">{property.location}</td>
               ))}
             </tr>
             <tr>
               <td className="p-4 border border-[#222] bg-[#111] text-gray-400">Property Type</td>
               {compareList.map(property => (
-                <td key={property.id} className="p-4 border border-[#222] bg-[#111] text-[#f5f5f5] text-center">{property.type}</td>
+                <td key={property._id} className="p-4 border border-[#222] bg-[#111] text-[#f5f5f5] text-center">{property.type || 'House'}</td>
               ))}
             </tr>
             <tr>
               <td className="p-4 border border-[#222] bg-[#0a0a0a] text-gray-400">Bedrooms</td>
               {compareList.map(property => (
-                <td key={property.id} className="p-4 border border-[#222] bg-[#0a0a0a] text-[#f5f5f5] text-center font-semibold">{property.beds}</td>
+                <td key={property._id} className="p-4 border border-[#222] bg-[#0a0a0a] text-[#f5f5f5] text-center font-semibold">{property.bedrooms}</td>
               ))}
             </tr>
             <tr>
               <td className="p-4 border border-[#222] bg-[#111] text-gray-400">Bathrooms</td>
               {compareList.map(property => (
-                <td key={property.id} className="p-4 border border-[#222] bg-[#111] text-[#f5f5f5] text-center font-semibold">{property.baths}</td>
+                <td key={property._id} className="p-4 border border-[#222] bg-[#111] text-[#f5f5f5] text-center font-semibold">{property.bathrooms}</td>
               ))}
             </tr>
             <tr>
               <td className="p-4 border border-[#222] bg-[#0a0a0a] text-gray-400">Square Feet</td>
               {compareList.map(property => (
-                <td key={property.id} className="p-4 border border-[#222] bg-[#0a0a0a] text-[#f5f5f5] text-center">{property.sqft} sqft</td>
+                <td key={property._id} className="p-4 border border-[#222] bg-[#0a0a0a] text-[#f5f5f5] text-center">{property.area} sqft</td>
               ))}
             </tr>
             <tr>
               <td className="p-4 border border-[#222] bg-[#111] text-gray-400">Swimming Pool</td>
               {compareList.map(property => (
-                <td key={property.id} className="p-4 border border-[#222] bg-[#111] text-center">
+                <td key={property._id} className="p-4 border border-[#222] bg-[#111] text-center">
                   {property.price > 4000000 ? <Check size={20} className="text-[#c5a059] mx-auto" /> : <span className="text-gray-600">-</span>}
                 </td>
               ))}
@@ -73,7 +77,7 @@ export default function Compare() {
             <tr>
               <td className="p-4 border border-[#222] bg-[#0a0a0a] text-gray-400 rounded-bl-2xl">Action</td>
               {compareList.map((property, idx) => (
-                <td key={property.id} className={`p-4 border border-[#222] bg-[#0a0a0a] text-center ${idx === compareList.length - 1 ? 'rounded-br-2xl' : ''}`}>
+                <td key={property._id} className={`p-4 border border-[#222] bg-[#0a0a0a] text-center ${idx === compareList.length - 1 ? 'rounded-br-2xl' : ''}`}>
                   <button className="bg-transparent border border-[#c5a059] text-[#c5a059] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#c5a059] hover:text-black transition-colors w-full">
                     Details
                   </button>

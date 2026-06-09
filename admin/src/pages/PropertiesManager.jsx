@@ -7,7 +7,8 @@ const PropertiesManager = () => {
   const [properties, setProperties] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState(null);
-  const [formData, setFormData] = useState({ title: '', description: '', price: '', location: '', bedrooms: 1, bathrooms: 1, area: 1000, status: 'available' });
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({ title: '', description: '', price: '', location: '', bedrooms: 1, bathrooms: 1, area: 1000, type: 'House', status: 'available', imageUrl: '', floorPlanUrl: '' });
 
   useEffect(() => {
     fetchProperties();
@@ -15,10 +16,13 @@ const PropertiesManager = () => {
 
   const fetchProperties = async () => {
     try {
+      setLoading(true);
       const { data } = await api.get('/properties');
       setProperties(data);
     } catch (error) {
       console.error('Failed to fetch properties', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,7 +43,7 @@ const PropertiesManager = () => {
 
   const handleAddNew = () => {
     setEditingProperty(null);
-    setFormData({ title: '', description: '', price: '', location: '', bedrooms: 1, bathrooms: 1, area: 1000, status: 'available' });
+    setFormData({ title: '', description: '', price: '', location: '', bedrooms: 1, bathrooms: 1, area: 1000, type: 'House', status: 'available', imageUrl: '', floorPlanUrl: '' });
     setIsModalOpen(true);
   };
 
@@ -131,11 +135,20 @@ const PropertiesManager = () => {
                 </td>
               </tr>
             ))}
-            {properties.length === 0 && (
+            {loading ? (
+              <tr>
+                <td colSpan="5" className="py-8 text-center text-gray-500">
+                  <div className="flex justify-center items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-t-gold animate-spin"></div>
+                    Loading properties...
+                  </div>
+                </td>
+              </tr>
+            ) : properties.length === 0 ? (
               <tr>
                 <td colSpan="5" className="py-8 text-center text-gray-500">No properties found.</td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>
@@ -184,8 +197,22 @@ const PropertiesManager = () => {
                       required
                       value={formData.location}
                       onChange={(e) => setFormData({...formData, location: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold mb-2"
                     />
+                    {formData.location && formData.location.length > 3 && (
+                      <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative">
+                        <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400">Loading map...</div>
+                        <iframe 
+                          title="Location Preview"
+                          width="100%" 
+                          height="100%" 
+                          frameBorder="0" 
+                          style={{ border: 0, position: 'relative', zIndex: 10 }}
+                          src={`https://maps.google.com/maps?q=${encodeURIComponent(formData.location)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -205,6 +232,25 @@ const PropertiesManager = () => {
                       value={formData.price}
                       onChange={(e) => setFormData({...formData, price: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                    <input 
+                      type="text" 
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Floor Plan URL (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={formData.floorPlanUrl}
+                      onChange={(e) => setFormData({...formData, floorPlanUrl: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold"
+                      placeholder="Leave blank for default"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -229,17 +275,42 @@ const PropertiesManager = () => {
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select 
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold capitalize"
-                    >
-                      <option value="available">Available</option>
-                      <option value="sold">Sold</option>
-                      <option value="rented">Rented</option>
-                    </select>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Area (sqft)</label>
+                      <input 
+                        type="number" 
+                        required
+                        value={formData.area}
+                        onChange={(e) => setFormData({...formData, area: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                      <select 
+                        value={formData.type}
+                        onChange={(e) => setFormData({...formData, type: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold"
+                      >
+                        <option value="House">House</option>
+                        <option value="Apartment">Apartment</option>
+                        <option value="Villa">Villa</option>
+                        <option value="Estate">Estate</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select 
+                        value={formData.status}
+                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-gold capitalize"
+                      >
+                        <option value="available">Available</option>
+                        <option value="sold">Sold</option>
+                        <option value="rented">Rented</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 

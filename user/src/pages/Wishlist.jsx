@@ -1,12 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, BedDouble, Bath, Square, Trash2 } from 'lucide-react';
-import { properties } from '../data/dummy';
+import api from '../api';
 import { motion } from 'framer-motion';
 
 export default function Wishlist() {
   const navigate = useNavigate();
-  const wishlistItems = properties.slice(1, 3);
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [wishlistIds, setWishlistIds] = useState(() => {
+    const saved = localStorage.getItem('estatecore_wishlist');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('estatecore_wishlist', JSON.stringify(wishlistIds));
+  }, [wishlistIds]);
+
+  useEffect(() => {
+    if (wishlistIds.length === 0) {
+      setWishlistItems([]);
+      return;
+    }
+    api.get('/properties').then(({ data }) => {
+      setWishlistItems(data.filter(p => wishlistIds.includes(p._id)));
+    }).catch(console.error);
+  }, [wishlistIds]);
+
+  const removeFromWishlist = (id, e) => {
+    e.stopPropagation();
+    setWishlistIds(wishlistIds.filter(itemId => itemId !== id));
+  };
 
   return (
     <div className="space-y-6">
@@ -19,8 +42,8 @@ export default function Wishlist() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {wishlistItems.map((property, idx) => (
             <motion.div 
-              key={property.id}
-              onClick={() => navigate(`/properties/${property.id}`)}
+              key={property._id}
+              onClick={() => navigate(`/user/properties/${property._id}`)}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
@@ -28,16 +51,19 @@ export default function Wishlist() {
             >
               <div className="w-full sm:w-48 h-48 sm:h-auto shrink-0 overflow-hidden relative">
                 <img 
-                  src={property.image} 
+                  src={property.imageUrl || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800"} 
                   alt={property.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-gray-800"
                 />
               </div>
               <div className="p-5 flex flex-col justify-between w-full">
                 <div>
                   <div className="flex justify-between items-start mb-1">
                     <h3 className="font-semibold text-lg text-[#f5f5f5]">{property.title}</h3>
-                    <button className="text-gray-500 hover:text-red-500 transition-colors">
+                    <button 
+                      onClick={(e) => removeFromWishlist(property._id, e)}
+                      className="text-gray-500 hover:text-red-500 transition-colors"
+                    >
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -46,13 +72,13 @@ export default function Wishlist() {
                     <span>{property.location}</span>
                   </div>
                   <div className="flex items-center gap-4 text-gray-300 text-sm">
-                    <div className="flex items-center gap-1.5"><BedDouble size={14} className="text-[#c5a059]"/> {property.beds}</div>
-                    <div className="flex items-center gap-1.5"><Bath size={14} className="text-[#c5a059]"/> {property.baths}</div>
-                    <div className="flex items-center gap-1.5"><Square size={14} className="text-[#c5a059]"/> {property.sqft} sqft</div>
+                    <div className="flex items-center gap-1.5"><BedDouble size={14} className="text-[#c5a059]"/> {property.bedrooms}</div>
+                    <div className="flex items-center gap-1.5"><Bath size={14} className="text-[#c5a059]"/> {property.bathrooms}</div>
+                    <div className="flex items-center gap-1.5"><Square size={14} className="text-[#c5a059]"/> {property.area} sqft</div>
                   </div>
                 </div>
                 <div className="mt-4 flex justify-between items-center">
-                  <p className="text-[#c5a059] font-bold text-xl">${property.price.toLocaleString()}</p>
+                  <p className="text-[#c5a059] font-bold text-xl">${property.price ? property.price.toLocaleString() : property.price}</p>
                   <button className="bg-[#222] hover:bg-[#c5a059] hover:text-black text-[#f5f5f5] px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
                     View Details
                   </button>
@@ -66,7 +92,10 @@ export default function Wishlist() {
           <Heart size={48} className="mx-auto text-gray-600 mb-4" />
           <h2 className="text-xl font-semibold text-[#f5f5f5]">Your wishlist is empty</h2>
           <p className="text-gray-400 mt-2">Start exploring properties and save your favorites here.</p>
-          <button className="mt-6 bg-[#c5a059] text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-600 transition-colors">
+          <button 
+            onClick={() => navigate('/user/properties')}
+            className="mt-6 bg-[#c5a059] text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
+          >
             Browse Properties
           </button>
         </div>

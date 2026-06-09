@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Building, Users, ShoppingCart, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import api from '../api';
 
 const Dashboard = () => {
@@ -8,7 +9,8 @@ const Dashboard = () => {
     properties: 0,
     users: 0,
     requests: 0,
-    visits: 0
+    visits: 0,
+    chartData: null
   });
 
   useEffect(() => {
@@ -23,11 +25,34 @@ const Dashboard = () => {
         api.get('/buy-requests'),
         api.get('/visits')
       ]);
+
+      const propStatus = { available: 0, sold: 0, rented: 0 };
+      propRes.data.forEach(p => {
+        if (propStatus[p.status] !== undefined) propStatus[p.status]++;
+      });
+
+      const reqStatus = { pending: 0, approved: 0, rejected: 0 };
+      reqRes.data.forEach(r => {
+        if (reqStatus[r.status] !== undefined) reqStatus[r.status]++;
+      });
+
       setStats({
         properties: propRes.data.length,
         users: userRes.data.length,
         requests: reqRes.data.length,
-        visits: visitRes.data.length
+        visits: visitRes.data.length,
+        chartData: {
+          statusData: [
+            { name: 'Available', value: propStatus.available },
+            { name: 'Sold', value: propStatus.sold },
+            { name: 'Rented', value: propStatus.rented },
+          ],
+          requestsData: [
+            { name: 'Pending', value: reqStatus.pending },
+            { name: 'Approved', value: reqStatus.approved },
+            { name: 'Rejected', value: reqStatus.rejected },
+          ]
+        }
       });
     } catch (error) {
       console.error('Failed to fetch dashboard stats', error);
@@ -77,15 +102,53 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[400px] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4 text-gold">
-            <Building size={32} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        {/* Properties Status Chart */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Property Distribution by Status</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.chartData?.statusData || []}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <RechartsTooltip 
+                  cursor={{ fill: '#f9fafb' }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                />
+                <Bar dataKey="value" fill="#c5a059" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <h3 className="text-xl font-bold text-gray-900">Analytics Dashboard</h3>
-          <p className="text-gray-500 mt-2 max-w-md mx-auto">
-            Detailed charts and graphs will be populated here as your platform gathers more real-time data from user interactions.
-          </p>
+        </div>
+
+        {/* Requests Status Chart */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Buy Requests Overview</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.chartData?.requestsData || []}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  {(stats.chartData?.requestsData || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={['#c5a059', '#10b981', '#ef4444'][index % 3]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

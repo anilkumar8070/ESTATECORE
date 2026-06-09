@@ -1,124 +1,150 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, Heart, Clock, Calendar, ArrowRight, ShoppingBag } from 'lucide-react';
-import { userStats, properties } from '../data/dummy';
+import { Eye, Clock, Calendar, ArrowRight, ShoppingBag, MapPin } from 'lucide-react';
+import api from '../api';
+import Hero from '../components/Hero';
 
 const StatCard = ({ title, value, icon, gradient }) => (
   <motion.div 
     whileHover={{ y: -5, scale: 1.02 }}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="relative overflow-hidden bg-[#111]/40 backdrop-blur-xl border border-white/5 p-6 rounded-3xl flex items-center gap-5 transition-all duration-300 group"
+    className="relative overflow-hidden bg-white border border-gray-100 p-6 rounded-3xl flex items-center gap-5 transition-all duration-300 group shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-xl"
   >
-    <div className={`absolute -inset-px opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500 bg-gradient-to-r ${gradient} blur-sm -z-10`}></div>
-    <div className="absolute inset-0 bg-[#111]/80 rounded-3xl -z-10"></div>
-    <div className={`p-4 rounded-2xl bg-gradient-to-br ${gradient} bg-opacity-10 backdrop-blur-md border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.5)]`}>
+    <div className={`p-4 rounded-2xl bg-gradient-to-br ${gradient} shadow-lg`}>
       {icon}
     </div>
     <div>
-      <p className="text-gray-400 text-sm font-light tracking-wide">{title}</p>
-      <h3 className="text-3xl font-bold mt-1 text-[#f5f5f5] tracking-tight">{value}</h3>
+      <p className="text-gray-500 text-sm font-semibold tracking-wide">{title}</p>
+      <h3 className="text-3xl font-black mt-1 text-gray-900 tracking-tight">{value}</h3>
     </div>
   </motion.div>
 );
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [properties, setProperties] = useState([]);
+  const [stats, setStats] = useState({ purchased: 0, pendingRequests: 0, completedVisits: 0, scheduledVisits: 0 });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [propRes, usersRes] = await Promise.all([
+          api.get('/properties'),
+          api.get('/users')
+        ]);
+        setProperties(propRes.data.filter(p => p.status === 'available'));
+        
+        const user = usersRes.data.length > 0 ? usersRes.data[0] : null;
+        if (user) {
+          const [reqRes, visitRes] = await Promise.all([
+            api.get('/buy-requests'),
+            api.get('/visits')
+          ]);
+          
+          const userRequests = reqRes.data.filter(r => r.userId?._id === user._id);
+          const userVisits = visitRes.data.filter(v => v.userId?._id === user._id);
+          
+          setStats({
+            purchased: userRequests.filter(r => r.status === 'approved').length,
+            pendingRequests: userRequests.filter(r => r.status === 'pending').length,
+            completedVisits: userVisits.filter(v => v.status === 'completed').length,
+            scheduledVisits: userVisits.filter(v => v.status === 'scheduled').length
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
-    <div className="space-y-10">
-      <div>
-        <motion.h1 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-4xl md:text-5xl font-bold text-[#f5f5f5] tracking-tighter"
-        >
-          Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c5a059] to-[#e8c87e]">John!</span>
-        </motion.h1>
-        <motion.p 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-gray-400 mt-3 font-light text-lg"
-        >
-          Here is what's happening with your real estate journey today.
-        </motion.p>
-      </div>
+    <div className="pb-16">
+      <Hero />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Purchased Properties" 
-          value={1} 
-          icon={<ShoppingBag size={24} className="text-white" />} 
-          gradient="from-emerald-500/40 to-teal-500/40"
-        />
-        <StatCard 
-          title="Pending Purchases" 
-          value={userStats.activeRequests || 3} 
-          icon={<Clock size={24} className="text-white" />} 
-          gradient="from-[#c5a059]/60 to-yellow-500/40"
-        />
-        <StatCard 
-          title="Completed Visits" 
-          value={userStats.viewed || 15} 
-          icon={<Eye size={24} className="text-white" />} 
-          gradient="from-blue-500/40 to-cyan-500/40"
-        />
-        <StatCard 
-          title="Pending Visits" 
-          value={userStats.scheduledVisits || 2} 
-          icon={<Calendar size={24} className="text-white" />} 
-          gradient="from-red-500/40 to-pink-500/40"
-        />
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold tracking-tight text-[#f5f5f5]">Recently Viewed Properties</h2>
-          <button className="flex items-center gap-2 text-[#c5a059] hover:text-[#e8c87e] text-sm font-medium transition-colors group">
-            View all 
-            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-          </button>
+      <div className="max-w-[1600px] mx-auto px-6 md:px-10 space-y-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <StatCard 
+            title="Purchased Properties" 
+            value={stats.purchased} 
+            icon={<ShoppingBag size={24} className="text-white" />} 
+            gradient="from-emerald-500 to-teal-500"
+          />
+          <StatCard 
+            title="Pending Purchases" 
+            value={stats.pendingRequests} 
+            icon={<Clock size={24} className="text-white" />} 
+            gradient="from-gold to-yellow-600"
+          />
+          <StatCard 
+            title="Completed Visits" 
+            value={stats.completedVisits} 
+            icon={<Eye size={24} className="text-white" />} 
+            gradient="from-blue-500 to-indigo-600"
+          />
+          <StatCard 
+            title="Pending Visits" 
+            value={stats.scheduledVisits} 
+            icon={<Calendar size={24} className="text-white" />} 
+            gradient="from-rose-500 to-pink-600"
+          />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {properties.slice(0, 3).map((property, idx) => (
-            <motion.div 
-              key={property.id}
-              onClick={() => navigate(`/properties/${property.id}`)}
-              whileHover={{ y: -10 }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.1, duration: 0.4 }}
-              className="bg-[#111]/30 backdrop-blur-md border border-white/5 rounded-3xl overflow-hidden hover:border-[#c5a059]/30 hover:shadow-[0_0_30px_rgba(197,160,89,0.1)] transition-all group cursor-pointer"
+
+        <div>
+          <div className="flex items-center justify-between mb-10">
+            <h2 className="text-3xl font-black tracking-tight text-gray-900">Recently Viewed Properties</h2>
+            <button 
+              onClick={() => navigate('/user/properties')}
+              className="flex items-center gap-3 text-gray-500 hover:text-prime font-bold transition-colors group"
             >
-              <div className="h-56 overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 pointer-events-none"></div>
-                <img 
-                  src={property.image} 
-                  alt={property.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                />
-                <div className="absolute bottom-4 left-4 z-20">
-                  <p className="text-[#c5a059] font-bold text-xl drop-shadow-md">${property.price.toLocaleString()}</p>
-                </div>
+              View all 
+              <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center group-hover:bg-gold group-hover:text-white transition-all shadow-sm">
+                <ArrowRight size={16} />
               </div>
-              <div className="p-6 relative">
-                <div className="absolute -top-6 right-6 z-20 bg-[#111] p-3 rounded-2xl border border-white/5 shadow-xl group-hover:bg-[#c5a059] group-hover:text-black transition-colors duration-300">
-                  <ArrowRight size={20} className="-rotate-45" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            {properties.slice(0, 3).map((property, idx) => (
+              <motion.div 
+                key={property._id}
+                onClick={() => navigate(`/user/properties/${property._id}`)}
+                whileHover={{ y: -10 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.1, duration: 0.4 }}
+                className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden hover:border-gold/20 hover:shadow-2xl transition-all group cursor-pointer"
+              >
+                <div className="h-64 overflow-hidden relative">
+                  <div className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur px-4 py-2 rounded-full text-xs font-black text-prime shadow-lg">
+                    ${property.price ? property.price.toLocaleString() : property.price}
+                  </div>
+                  <img 
+                    src={property.imageUrl || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800"} 
+                    alt={property.title} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out bg-gray-100"
+                  />
                 </div>
-                <h3 className="font-semibold text-xl text-[#f5f5f5] tracking-tight mb-2 pr-12">{property.title}</h3>
-                <p className="text-gray-400 text-sm font-light mb-5">{property.location}</p>
-                <div className="flex items-center gap-4 text-xs font-medium text-gray-400 bg-white/5 p-3 rounded-xl border border-white/5">
-                  <div className="flex flex-col"><span className="text-[#f5f5f5] text-lg">{property.beds}</span> Beds</div>
-                  <div className="w-px h-8 bg-white/10"></div>
-                  <div className="flex flex-col"><span className="text-[#f5f5f5] text-lg">{property.baths}</span> Baths</div>
-                  <div className="w-px h-8 bg-white/10"></div>
-                  <div className="flex flex-col"><span className="text-[#f5f5f5] text-lg">{property.sqft}</span> SqFt</div>
+                <div className="p-8">
+                  <div className="flex items-center gap-2 text-gold font-bold text-xs uppercase tracking-widest mb-3">
+                    <MapPin size={14} />
+                    {property.location}
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 mb-6 group-hover:text-gold transition-colors">{property.title}</h3>
+                  <div className="flex items-center justify-between pt-6 border-t border-gray-50">
+                     <div className="flex gap-4 text-gray-500 font-bold text-sm">
+                        <span>{property.bedrooms} Beds</span>
+                        <span>{property.area} sqft</span>
+                     </div>
+                     <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-prime group-hover:bg-prime group-hover:text-gold transition-colors">
+                        <ArrowRight size={20} />
+                     </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

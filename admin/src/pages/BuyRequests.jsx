@@ -7,16 +7,21 @@ const BuyRequests = () => {
   const [requests, setRequests] = useState([]);
   const [filter, setFilter] = useState('All');
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     fetchRequests();
   }, []);
 
   const fetchRequests = async () => {
     try {
+      setLoading(true);
       const { data } = await api.get('/buy-requests');
       setRequests(data);
     } catch (error) {
       console.error('Failed to fetch buy requests', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,11 +125,16 @@ const BuyRequests = () => {
           ))}
         </AnimatePresence>
         
-        {filteredRequests.length === 0 && (
+        {loading ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-gray-100 flex justify-center items-center gap-3">
+            <div className="w-5 h-5 rounded-full border-2 border-t-gold animate-spin"></div>
+            <p className="text-gray-500">Loading requests...</p>
+          </div>
+        ) : filteredRequests.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
             <p className="text-gray-500">No requests found for this status.</p>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
