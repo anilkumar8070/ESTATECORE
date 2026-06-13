@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Building, Users, ShoppingCart, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import api from '../api';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -19,28 +20,31 @@ const Dashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const [propRes, userRes, reqRes, visitRes] = await Promise.all([
-        api.get('/properties'),
-        api.get('/users'),
-        api.get('/buy-requests'),
-        api.get('/visits')
+      const [propSnap, userSnap, reqSnap, visitSnap] = await Promise.all([
+        getDocs(collection(db, 'properties')),
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'buyRequests')),
+        getDocs(collection(db, 'visits'))
       ]);
 
+      const propData = propSnap.docs.map(doc => doc.data());
+      const reqData = reqSnap.docs.map(doc => doc.data());
+
       const propStatus = { available: 0, sold: 0, rented: 0 };
-      propRes.data.forEach(p => {
+      propData.forEach(p => {
         if (propStatus[p.status] !== undefined) propStatus[p.status]++;
       });
 
       const reqStatus = { pending: 0, approved: 0, rejected: 0 };
-      reqRes.data.forEach(r => {
+      reqData.forEach(r => {
         if (reqStatus[r.status] !== undefined) reqStatus[r.status]++;
       });
 
       setStats({
-        properties: propRes.data.length,
-        users: userRes.data.length,
-        requests: reqRes.data.length,
-        visits: visitRes.data.length,
+        properties: propSnap.size,
+        users: userSnap.size,
+        requests: reqSnap.size,
+        visits: visitSnap.size,
         chartData: {
           statusData: [
             { name: 'Available', value: propStatus.available },

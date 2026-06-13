@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Star, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api';
+import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const ReviewsManager = () => {
   const [reviews, setReviews] = useState([]);
@@ -12,7 +13,8 @@ const ReviewsManager = () => {
 
   const fetchReviews = async () => {
     try {
-      const { data } = await api.get('/reviews');
+      const querySnapshot = await getDocs(collection(db, 'reviews'));
+      const data = querySnapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
       setReviews(data);
     } catch (error) {
       console.error('Failed to fetch reviews', error);
@@ -21,7 +23,7 @@ const ReviewsManager = () => {
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/reviews/${id}`);
+      await deleteDoc(doc(db, 'reviews', id));
       setReviews(reviews.filter(r => r._id !== id));
     } catch (error) {
       console.error('Failed to delete review', error);
@@ -58,12 +60,12 @@ const ReviewsManager = () => {
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-prime text-gold flex items-center justify-center font-bold">
-                    {review.userId?.name?.charAt(0) || 'U'}
+                  <div className="w-10 h-10 rounded-full bg-prime text-gold flex items-center justify-center font-bold uppercase">
+                    {(review.userName || review.userId?.name || 'U').charAt(0)}
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900">{review.userId?.name || 'Unknown User'}</h3>
-                    <p className="text-xs text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</p>
+                    <h3 className="font-bold text-gray-900">{review.userName || review.userId?.name || 'Unknown User'}</h3>
+                    <p className="text-xs text-gray-500">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : new Date(review.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="flex space-x-1">
@@ -74,7 +76,7 @@ const ReviewsManager = () => {
               <div className="mb-4">
                 <p className="text-xs font-semibold text-prime mb-1">PROPERTY:</p>
                 <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded-md border border-gray-100">
-                  {review.propertyId?.title || 'Unknown Property'}
+                  {review.propertyTitle || review.propertyId?.title || 'Unknown Property'}
                 </p>
               </div>
 

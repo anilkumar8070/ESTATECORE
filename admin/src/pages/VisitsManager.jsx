@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, Check, X, CalendarClock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const VisitsManager = () => {
   const [visits, setVisits] = useState([]);
@@ -13,7 +14,8 @@ const VisitsManager = () => {
 
   const fetchVisits = async () => {
     try {
-      const { data } = await api.get('/visits');
+      const querySnapshot = await getDocs(collection(db, 'visits'));
+      const data = querySnapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
       setVisits(data);
     } catch (error) {
       console.error('Failed to fetch visits', error);
@@ -22,8 +24,9 @@ const VisitsManager = () => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const { data } = await api.put(`/visits/${id}`, { status: newStatus.toLowerCase() });
-      setVisits(visits.map(v => v._id === id ? data : v));
+      const statusToSet = newStatus.toLowerCase();
+      await updateDoc(doc(db, 'visits', id), { status: statusToSet });
+      setVisits(visits.map(v => v._id === id ? { ...v, status: statusToSet } : v));
     } catch (error) {
       console.error('Failed to update visit status', error);
     }
@@ -81,8 +84,8 @@ const VisitsManager = () => {
                 <CalendarClock size={20} className="text-gray-300" />
               </div>
               
-              <h3 className="text-lg font-bold text-gray-900 mb-1">{visit.propertyId?.title || 'Unknown Property'}</h3>
-              <p className="text-sm text-gray-500 mb-4">Requested by: <span className="font-medium text-gray-700">{visit.userId?.name || 'Unknown User'}</span></p>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">{visit.propertyTitle || visit.propertyId?.title || 'Unknown Property'}</h3>
+              <p className="text-sm text-gray-500 mb-4">Requested by: <span className="font-medium text-gray-700">{visit.userName || visit.userId?.name || 'Unknown User'}</span></p>
 
               <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center mb-6">
                 <div className="flex items-center text-sm font-medium text-gray-700">

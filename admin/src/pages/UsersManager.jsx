@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Shield, ShieldAlert, UserCheck, UserX, Search } from 'lucide-react';
-import api from '../api';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const UsersManager = () => {
   const [users, setUsers] = useState([]);
@@ -14,7 +15,8 @@ const UsersManager = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/users');
+      const querySnapshot = await getDocs(collection(db, 'users'));
+      const data = querySnapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
       setUsers(data);
     } catch (error) {
       console.error('Failed to fetch users', error);
@@ -25,9 +27,9 @@ const UsersManager = () => {
 
   const toggleStatus = async (user) => {
     try {
-      const newStatus = user.isActive ? false : true;
-      const { data } = await api.put(`/users/${user._id}`, { isActive: newStatus });
-      setUsers(users.map(u => u._id === user._id ? data : u));
+      const newStatus = user.isActive === false ? true : false;
+      await updateDoc(doc(db, 'users', user._id), { isActive: newStatus });
+      setUsers(users.map(u => u._id === user._id ? { ...u, isActive: newStatus } : u));
     } catch (error) {
       console.error('Failed to update user status', error);
     }
@@ -35,8 +37,8 @@ const UsersManager = () => {
 
   const changeRole = async (user, newRole) => {
     try {
-      const { data } = await api.put(`/users/${user._id}`, { role: newRole });
-      setUsers(users.map(u => u._id === user._id ? data : u));
+      await updateDoc(doc(db, 'users', user._id), { role: newRole });
+      setUsers(users.map(u => u._id === user._id ? { ...u, role: newRole } : u));
     } catch (error) {
       console.error('Failed to update user role', error);
     }
@@ -80,11 +82,11 @@ const UsersManager = () => {
               <tr key={user._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                 <td className="py-4 px-6">
                   <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-prime text-gold flex items-center justify-center font-bold mr-3">
-                      {user.name.charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-prime text-gold flex items-center justify-center font-bold mr-3 uppercase">
+                      {(user.fullName || user.name || 'U').charAt(0)}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{user.name}</p>
+                      <p className="font-medium text-gray-900">{user.fullName || user.name || 'User'}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
@@ -100,7 +102,7 @@ const UsersManager = () => {
                   </select>
                 </td>
                 <td className="py-4 px-6 text-gray-500 text-sm">
-                  {new Date(user.createdAt).toLocaleDateString()}
+                  {user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString() : (user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A')}
                 </td>
                 <td className="py-4 px-6">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium flex w-fit items-center ${

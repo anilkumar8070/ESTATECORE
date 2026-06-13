@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { 
   Camera, 
   Video, 
@@ -22,6 +25,7 @@ import {
 const SellProperty = () => {
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { currentUser } = useAuth();
   const [formData, setFormData] = useState({
     category: '',
     title: '',
@@ -76,9 +80,34 @@ const SellProperty = () => {
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    if (!currentUser) {
+      alert("Please sign in to list a property.");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'properties'), {
+        title: formData.title,
+        price: parseInt(formData.price.replace(/[^0-9]/g, '')) || 5000000,
+        location: formData.location,
+        type: formData.category || 'House',
+        description: formData.description,
+        sellerId: currentUser.uid,
+        sellerName: currentUser.fullName || currentUser.email,
+        status: 'available',
+        bedrooms: 3,
+        bathrooms: 2,
+        area: 2000,
+        imageUrl: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800",
+        createdAt: new Date().toISOString()
+      });
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error("Failed to submit property:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   if (isSubmitted) {

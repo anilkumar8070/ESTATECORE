@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const PropertiesManager = () => {
   const [properties, setProperties] = useState([]);
@@ -17,8 +18,9 @@ const PropertiesManager = () => {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/properties');
-      setProperties(data);
+      const querySnapshot = await getDocs(collection(db, 'properties'));
+      const propsData = querySnapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+      setProperties(propsData);
     } catch (error) {
       console.error('Failed to fetch properties', error);
     } finally {
@@ -28,7 +30,7 @@ const PropertiesManager = () => {
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/properties/${id}`);
+      await deleteDoc(doc(db, 'properties', id));
       setProperties(properties.filter(p => p._id !== id));
     } catch (error) {
       console.error('Failed to delete property', error);
@@ -50,12 +52,24 @@ const PropertiesManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Clean up formData (ensure numbers are numbers)
+      const dataToSave = {
+        ...formData,
+        price: Number(formData.price),
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        area: Number(formData.area),
+        updatedAt: serverTimestamp()
+      };
+
       if (editingProperty) {
-        const { data } = await api.put(`/properties/${editingProperty._id}`, formData);
-        setProperties(properties.map(p => p._id === editingProperty._id ? data : p));
+        const propertyRef = doc(db, 'properties', editingProperty._id);
+        await updateDoc(propertyRef, dataToSave);
+        setProperties(properties.map(p => p._id === editingProperty._id ? { ...dataToSave, _id: editingProperty._id } : p));
       } else {
-        const { data } = await api.post('/properties', formData);
-        setProperties([...properties, data]);
+        dataToSave.createdAt = serverTimestamp();
+        const docRef = await addDoc(collection(db, 'properties'), dataToSave);
+        setProperties([...properties, { ...dataToSave, _id: docRef.id }]);
       }
       setIsModalOpen(false);
     } catch (error) {
@@ -79,8 +93,8 @@ const PropertiesManager = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-        <div className="relative w-64">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative w-full md:w-64">
           <input 
             type="text" 
             placeholder="Search properties..." 
@@ -88,8 +102,8 @@ const PropertiesManager = () => {
           />
           <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
         </div>
-        <div className="flex space-x-2">
-          <select className="border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:border-gold">
+        <div className="flex w-full md:w-auto space-x-2">
+          <select className="w-full md:w-auto border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:border-gold">
             <option>All Status</option>
             <option>available</option>
             <option>sold</option>
@@ -99,7 +113,7 @@ const PropertiesManager = () => {
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-accent text-gray-600 text-sm border-b border-gray-100">

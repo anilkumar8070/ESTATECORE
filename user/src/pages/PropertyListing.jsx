@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, MapPin, BedDouble, Bath, Square, Heart, ArrowRight } from 'lucide-react';
-import api from '../api';
+import { propertyService } from '../services/propertyService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PropertyListing() {
@@ -25,7 +25,7 @@ export default function PropertyListing() {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get('/properties');
+        const data = await propertyService.getAllProperties();
         setProperties(data.filter(p => p.status === 'available'));
       } catch (error) {
         console.error('Failed to fetch properties:', error);

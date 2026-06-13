@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, MapPin, Maximize2, IndianRupee, Layers, Search, Heart, CheckSquare, Square as SquareOutline } from 'lucide-react';
-import { featuredProperties } from '../data/indianRealEstate';
+import { propertyService } from '../services/propertyService';
 import { useUserContext } from '../context/UserContext';
 
 const PropertiesShowcase = () => {
@@ -13,6 +13,13 @@ const PropertiesShowcase = () => {
   const categories = ['All', 'Residential', 'Commercial', 'Rent', 'Plots', 'Industrial'];
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [featuredProperties, setFeaturedProperties] = useState([]);
+
+  useEffect(() => {
+    propertyService.getAllProperties()
+      .then(data => setFeaturedProperties(data.filter(p => p.status === 'available')))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     // If we came from a search with a specific type, set that category
@@ -31,7 +38,7 @@ const PropertiesShowcase = () => {
     // If no search state and category is 'All', show everything
     if (!searchState && activeCategory === 'All') return true;
 
-    const matchesCategory = activeCategory === 'All' || property.category === activeCategory;
+    const matchesCategory = activeCategory === 'All' || property.type === activeCategory || (activeCategory === 'Residential' && ['House', 'Apartment', 'Villa', 'Estate'].includes(property.type));
     const matchesSearch = searchTerm === '' || 
       property.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       property.location.toLowerCase().includes(searchTerm.toLowerCase());
@@ -43,9 +50,9 @@ const PropertiesShowcase = () => {
         property.title.toLowerCase().includes(searchState.location.toLowerCase());
       
       const matchesType = searchState.type === 'Any' || 
-        (searchState.type === 'Building' && (property.category === 'Residential' || property.category === 'Commercial')) ||
-        (searchState.type === 'Plot' && property.category === 'Plots') ||
-        (searchState.type === 'Villa' && property.subCategory === 'Villa');
+        (searchState.type === 'Building' && ['House', 'Apartment', 'Villa', 'Estate'].includes(property.type)) ||
+        (searchState.type === 'Plot' && property.type === 'Plot') ||
+        (searchState.type === 'Villa' && property.type === 'Villa');
 
       // Budget filtering is skipped for now as per previous implementation
       
@@ -56,7 +63,7 @@ const PropertiesShowcase = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const rentalProperties = featuredProperties.filter(p => p.category === 'Rent');
+  const rentalProperties = featuredProperties.filter(p => p.status === 'rented' || p.status === 'rent');
 
   return (
     <section className="py-24 bg-white overflow-hidden">
@@ -135,7 +142,7 @@ const PropertiesShowcase = () => {
           <AnimatePresence mode="popLayout">
             {filteredProperties.map((property, index) => (
               <motion.div
-                key={property.id}
+                key={property._id}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -146,7 +153,7 @@ const PropertiesShowcase = () => {
                 {/* Image Container */}
                 <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-gray-100 mb-6">
                   <img
-                    src={property.image}
+                    src={property.imageUrl || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800"}
                     alt={property.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
@@ -154,23 +161,23 @@ const PropertiesShowcase = () => {
                   {/* Badge & Actions */}
                   <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                     <span className="bg-white/90 backdrop-blur-md text-black text-[9px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm w-max">
-                      {property.subCategory}
+                      {property.type || 'House'}
                     </span>
                   </div>
                   
                   <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                     <button 
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(property); }}
-                      className={`p-2.5 rounded-full shadow-lg transition-transform ${isInWishlist(property.id) ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-400 hover:text-red-500'}`}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(property._id); }}
+                      className={`p-2.5 rounded-full shadow-lg transition-transform ${isInWishlist(property._id) ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-400 hover:text-red-500'}`}
                     >
-                      <Heart className="w-4 h-4" fill={isInWishlist(property.id) ? 'currentColor' : 'none'} />
+                      <Heart className="w-4 h-4" fill={isInWishlist(property._id) ? 'currentColor' : 'none'} />
                     </button>
                     <button 
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(property); }}
-                      className={`p-2.5 rounded-full shadow-lg transition-transform ${isInCompare(property.id) ? 'bg-[#1a1a2e] text-white' : 'bg-white/90 text-gray-400 hover:text-[#1a1a2e]'}`}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(property._id); }}
+                      className={`p-2.5 rounded-full shadow-lg transition-transform ${isInCompare(property._id) ? 'bg-[#1a1a2e] text-white' : 'bg-white/90 text-gray-400 hover:text-[#1a1a2e]'}`}
                       title="Compare"
                     >
-                      {isInCompare(property.id) ? <CheckSquare className="w-4 h-4" /> : <SquareOutline className="w-4 h-4" />}
+                      {isInCompare(property._id) ? <CheckSquare className="w-4 h-4" /> : <SquareOutline className="w-4 h-4" />}
                     </button>
                   </div>
 
@@ -181,7 +188,7 @@ const PropertiesShowcase = () => {
                       whileTap={{ scale: 0.95 }}
                     >
                       <Link 
-                        to={`/property/${property.id}`}
+                        to={`/user/properties/${property._id}`}
                         className="bg-white text-black px-6 py-3 rounded-full font-bold text-sm flex items-center space-x-2 shadow-xl"
                       >
                         <span>Explore Details</span>
@@ -195,7 +202,7 @@ const PropertiesShowcase = () => {
                     <div className="bg-white/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-lg flex justify-between items-center">
                       <div className="flex items-center text-black font-bold text-xl">
                         <IndianRupee size={18} className="mr-0.5" />
-                        {property.price}
+                        {property.price ? property.price.toLocaleString() : property.price}
                       </div>
                       <div className="text-[10px] uppercase font-bold text-gold tracking-tighter">
                         Verified
@@ -216,12 +223,12 @@ const PropertiesShowcase = () => {
                   <div className="flex items-center space-x-4 pt-1 border-t border-gray-50">
                     <div className="flex items-center text-gray-500 text-xs">
                       <Maximize2 size={14} className="mr-1.5 opacity-40" />
-                      {property.sqft} sq.ft
+                      {property.area} sq.ft
                     </div>
-                    {property.beds > 0 && (
+                    {property.bedrooms > 0 && (
                       <div className="flex items-center text-gray-500 text-xs">
                         <Layers size={14} className="mr-1.5 opacity-40" />
-                        {property.beds} BHK
+                        {property.bedrooms} BHK
                       </div>
                     )}
                   </div>

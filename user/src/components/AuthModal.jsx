@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { X, Home, Eye, EyeOff, Mail, Lock, User, Phone, MapPin } from 'lucide-react';
+import { X, Home, Eye, EyeOff, Mail, Lock, User, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
   const navigate = useNavigate();
@@ -18,16 +19,57 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
     role: 'buyer',
   });
 
-  const handleLoginSubmit = (e) => {
+  const { login, signup, loginWithGoogle } = useAuth();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    onClose();
-    navigate('/user/dashboard');
+    setError('');
+    setLoading(true);
+    try {
+      await login(loginData.email, loginData.password);
+      onClose();
+      navigate('/user/dashboard');
+    } catch (err) {
+      setError(err.message || 'Failed to log in');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
-    onClose();
-    navigate('/user/dashboard');
+    setError('');
+    setLoading(true);
+    try {
+      await signup(signupData.email, signupData.password, {
+        fullName: signupData.fullName,
+        phone: signupData.phone,
+        city: signupData.city,
+        role: signupData.role
+      });
+      onClose();
+      navigate('/user/dashboard');
+    } catch (err) {
+      setError(err.message || 'Failed to create an account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+      onClose();
+      navigate('/user/dashboard');
+    } catch (err) {
+      setError(err.message || 'Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const backdropVariants = {
@@ -58,47 +100,80 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
             animate="visible"
             exit="exit"
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden"
+            className="relative w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[85vh]"
           >
-            {/* Top accent bar */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-prime via-gold to-prime" />
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-8 pt-7 pb-4">
-              <div className="flex items-center gap-2 text-xl font-black tracking-tighter">
-                <div className="w-8 h-8 bg-prime text-gold rounded-full flex items-center justify-center">
-                  <Home size={15} />
-                </div>
-                ESTATE<span className="text-gold font-light">CORE</span>
+            {/* Left Image / Branding Side (Hidden on Mobile) */}
+            <div className="hidden md:flex flex-col justify-between w-1/2 bg-black relative p-10 text-white overflow-hidden">
+              <div className="absolute inset-0 z-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800" 
+                  alt="Premium Real Estate" 
+                  className="w-full h-full object-cover opacity-50"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
               </div>
-              <button
-                onClick={onClose}
-                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-prime transition-colors"
-              >
-                <X size={18} />
-              </button>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 text-2xl font-black tracking-tighter mb-4">
+                  <div className="w-10 h-10 bg-prime text-gold rounded-full flex items-center justify-center shadow-lg">
+                    <Home size={20} />
+                  </div>
+                  ESTATE<span className="text-gold font-light">CORE</span>
+                </div>
+              </div>
+
+              <div className="relative z-10 mb-8">
+                <h3 className="text-3xl font-light leading-tight mb-4">
+                  Discover your <br/><span className="font-bold text-gold">dream property</span> today.
+                </h3>
+                <p className="text-gray-300 text-sm max-w-sm font-medium">
+                  Join thousands of users who have successfully found their perfect home or investment opportunity through our premium platform.
+                </p>
+              </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex mx-8 mb-6 bg-gray-100 p-1 rounded-full">
-              {['login', 'signup'].map((t) => (
+            {/* Right Form Side */}
+            <div className="w-full md:w-1/2 flex flex-col bg-white relative">
+              {/* Top accent bar */}
+              <div className="h-1.5 w-full bg-gradient-to-r from-prime via-gold to-prime absolute top-0 left-0" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-8 pt-8 pb-4 shrink-0">
+                <div className="md:hidden flex items-center gap-2 text-xl font-black tracking-tighter">
+                  <div className="w-8 h-8 bg-prime text-gold rounded-full flex items-center justify-center">
+                    <Home size={15} />
+                  </div>
+                  ESTATE<span className="text-gold font-light">CORE</span>
+                </div>
+                <div className="hidden md:block"></div>
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all ${
-                    tab === t
-                      ? 'bg-prime text-white shadow-md'
-                      : 'text-gray-500 hover:text-prime'
-                  }`}
+                  onClick={onClose}
+                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-prime transition-colors shrink-0"
                 >
-                  {t === 'login' ? 'Login' : 'Sign Up'}
+                  <X size={18} />
                 </button>
-              ))}
-            </div>
+              </div>
 
-            {/* Forms */}
-            <div className="px-8 pb-8">
-              <AnimatePresence mode="wait">
+              {/* Tabs */}
+              <div className="flex mx-8 mb-6 bg-gray-100 p-1 rounded-full shrink-0">
+                {['login', 'signup'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all ${
+                      tab === t
+                        ? 'bg-prime text-white shadow-md'
+                        : 'text-gray-500 hover:text-prime'
+                    }`}
+                  >
+                    {t === 'login' ? 'Login' : 'Sign Up'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Forms */}
+              <div className="px-8 pb-8 overflow-y-auto flex-1 scrollbar-hide">
+                <AnimatePresence mode="wait">
                 {tab === 'login' ? (
                   <motion.form
                     key="login"
@@ -113,6 +188,13 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
                       <p className="text-2xl font-black text-gray-900 mb-1">Welcome back</p>
                       <p className="text-sm text-gray-500">Sign in to your EstateCore account</p>
                     </div>
+
+                    {error && (
+                      <div className="bg-red-50 text-red-500 p-3 rounded-xl text-sm flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        {error}
+                      </div>
+                    )}
 
                     {/* Email */}
                     <div className="relative">
@@ -157,14 +239,15 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
-                      className="w-full bg-prime text-white py-4 rounded-2xl font-black text-sm tracking-wide hover:bg-gray-800 transition-colors shadow-lg shadow-prime/20"
+                      disabled={loading}
+                      className="w-full bg-prime text-white py-4 rounded-2xl font-black text-sm tracking-wide hover:bg-gray-800 transition-colors shadow-lg shadow-prime/20 disabled:opacity-70"
                     >
-                      Login to Account
+                      {loading ? 'Logging in...' : 'Login to Account'}
                     </motion.button>
 
                     <Divider />
 
-                    <GoogleButton />
+                    <GoogleButton onClick={handleGoogleSignIn} disabled={loading} />
 
                     <p className="text-center text-xs text-gray-400 mt-2">
                       Don't have an account?{' '}
@@ -191,6 +274,13 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
                       <p className="text-2xl font-black text-gray-900 mb-1">Create account</p>
                       <p className="text-sm text-gray-500">Join thousands of property seekers</p>
                     </div>
+
+                    {error && (
+                      <div className="bg-red-50 text-red-500 p-3 rounded-xl text-sm flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        {error}
+                      </div>
+                    )}
 
                     {/* Full Name */}
                     <div className="relative">
@@ -294,14 +384,15 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
-                      className="w-full bg-prime text-white py-4 rounded-2xl font-black text-sm tracking-wide hover:bg-gray-800 transition-colors shadow-lg shadow-prime/20"
+                      disabled={loading}
+                      className="w-full bg-prime text-white py-4 rounded-2xl font-black text-sm tracking-wide hover:bg-gray-800 transition-colors shadow-lg shadow-prime/20 disabled:opacity-70"
                     >
-                      Create Account
+                      {loading ? 'Creating Account...' : 'Create Account'}
                     </motion.button>
 
                     <Divider />
 
-                    <GoogleButton />
+                    <GoogleButton onClick={handleGoogleSignIn} disabled={loading} />
 
                     <p className="text-center text-xs text-gray-400 mt-2">
                       Already have an account?{' '}
@@ -316,6 +407,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login' }) => {
                   </motion.form>
                 )}
               </AnimatePresence>
+            </div>
             </div>
           </motion.div>
         </motion.div>
@@ -332,12 +424,14 @@ const Divider = () => (
   </div>
 );
 
-const GoogleButton = () => (
+const GoogleButton = ({ onClick, disabled }) => (
   <motion.button
     whileHover={{ scale: 1.02 }}
     whileTap={{ scale: 0.98 }}
     type="button"
-    className="w-full flex items-center justify-center gap-3 py-3.5 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
+    onClick={onClick}
+    disabled={disabled}
+    className="w-full flex items-center justify-center gap-3 py-3.5 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-70"
   >
     <svg width="18" height="18" viewBox="0 0 18 18">
       <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>

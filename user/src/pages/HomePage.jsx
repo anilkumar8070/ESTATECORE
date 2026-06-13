@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import Footer from '../components/Footer';
 import AuthModal from '../components/AuthModal';
+import FeaturedNeighborhoods from '../components/FeaturedNeighborhoods';
+import ScrollingTextSection from '../components/ScrollingTextSection';
+import ContactSection from '../components/ContactSection';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -280,22 +283,32 @@ const HomePage = () => {
             whileInView="show"
             viewport={{ once: true }}
             variants={bentoVariants}
-            className="md:col-span-8 md:row-span-2 bg-white rounded-[2rem] p-8 md:p-12 relative overflow-hidden flex flex-col justify-between border border-gray-100/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] group"
+            className="md:col-span-8 md:row-span-2 rounded-[2rem] p-8 md:p-12 relative overflow-hidden flex flex-col justify-between border border-gray-100/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] group"
           >
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gold/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 group-hover:bg-gold/10 transition-colors duration-700" />
+            {/* Background Image for Main Panel */}
+            <img 
+              src="https://images.unsplash.com/photo-1613490908677-1e52dbb7dbf3?auto=format&fit=crop&q=80&w=1200" 
+              alt="Modern Living"
+              className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-1000"
+            />
+            {/* Gradient Overlay to ensure text readability but keep image visible */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent z-0"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-white/60 to-transparent md:hidden z-0"></div>
+
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gold/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 group-hover:bg-gold/20 transition-colors duration-700 z-0" />
 
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full mb-8 border border-gray-100">
+              <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-8 border border-white/40 shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs font-bold tracking-widest uppercase text-gray-500">24 New Properties Today</span>
+                <span className="text-xs font-bold tracking-widest uppercase text-gray-800">24 New Properties Today</span>
               </div>
 
-              <h2 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter leading-[0.95] text-gray-900 mb-6">
+              <h2 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tighter leading-[0.95] text-gray-900 mb-6 drop-shadow-sm">
                 Discover <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-prime to-gray-500">Modern</span> Living.
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-prime to-gray-600 drop-shadow-sm">Modern</span> Living.
               </h2>
 
-              <p className="text-lg md:text-xl text-gray-500 max-w-md font-medium leading-relaxed">
+              <p className="text-lg md:text-xl text-gray-700 max-w-md font-bold leading-relaxed drop-shadow-sm">
                 Elevate your lifestyle with our curated collection of premium real estate worldwide.
               </p>
             </div>
@@ -331,20 +344,27 @@ const HomePage = () => {
             whileInView="show"
             viewport={{ once: true }}
             variants={bentoVariants}
-            className="md:col-span-4 md:row-span-1 bg-prime rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-center items-center text-center shadow-xl shadow-prime/10"
+            className="md:col-span-4 md:row-span-1 rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-center items-center text-center shadow-xl group"
           >
+            <img 
+              src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" 
+              alt="Premium Living" 
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 z-0"
+            />
+            <div className="absolute inset-0 bg-prime/80 backdrop-blur-[2px] z-0"></div>
+            
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-0 opacity-20"
+              className="absolute inset-0 opacity-40 z-0 pointer-events-none"
             >
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-gold rounded-full border-dashed" />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-white rounded-full" />
             </motion.div>
 
             <div className="relative z-10">
-              <h3 className="text-5xl font-black text-white tracking-tighter mb-2">2.5k<span className="text-gold">+</span></h3>
-              <p className="text-gray-400 font-medium uppercase tracking-widest text-sm">Premium Listings</p>
+              <h3 className="text-5xl font-black text-white tracking-tighter mb-2 drop-shadow-md">2.5k<span className="text-gold">+</span></h3>
+              <p className="text-gray-300 font-bold uppercase tracking-widest text-sm drop-shadow-sm">Premium Listings</p>
             </div>
           </motion.div>
 
@@ -356,14 +376,19 @@ const HomePage = () => {
             viewport={{ once: true }}
             variants={bentoVariants}
             onClick={() => openAuth('signup')}
-            className="md:col-span-4 md:row-span-1 bg-gold rounded-[2rem] p-8 flex items-end relative overflow-hidden group cursor-pointer shadow-xl shadow-gold/20"
+            className="md:col-span-4 md:row-span-1 rounded-[2rem] p-8 flex items-end relative overflow-hidden group cursor-pointer shadow-xl shadow-gold/20"
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <img 
+              src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800" 
+              alt="Luxury Villas" 
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 z-0"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-gold/95 via-gold/40 to-transparent z-0" />
 
             <div className="relative z-10 w-full flex items-center justify-between">
               <div>
-                <p className="text-white/80 font-bold uppercase tracking-widest text-xs mb-1">Featured</p>
-                <h3 className="text-2xl font-black text-white">Luxury Villas</h3>
+                <p className="text-gold font-black uppercase tracking-widest text-xs mb-1 drop-shadow-md">Featured</p>
+                <h3 className="text-2xl font-black text-white drop-shadow-md">Luxury Villas</h3>
               </div>
               <motion.div
                 whileHover={{ x: 5 }}
@@ -372,56 +397,16 @@ const HomePage = () => {
                 <ArrowRight size={20} />
               </motion.div>
             </div>
-
-            <Star className="absolute top-6 right-6 text-white/30" size={64} strokeWidth={1} />
           </motion.div>
         </div>
+      </main>
 
-        {/* Search Bar below bento */}
-        <motion.div
-          custom={4}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={bentoVariants}
-          className="mt-6 bg-white rounded-[2rem] p-4 flex flex-col md:flex-row items-center gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50"
-        >
-          <div className="flex-1 w-full flex items-center bg-gray-50 rounded-2xl px-6 py-4 border border-gray-100 focus-within:border-gold/50 focus-within:bg-white transition-colors group">
-            <Search className="text-gray-400 group-focus-within:text-gold mr-4 shrink-0" size={24} />
-            <input
-              type="text"
-              placeholder="Search by neighborhood, city, or zip code..."
-              className="w-full bg-transparent border-none outline-none text-gray-900 font-semibold placeholder-gray-400 text-lg"
-            />
-          </div>
+      {/* Featured Neighborhoods (Full width section) */}
+      <FeaturedNeighborhoods />
 
-          <div className="hidden md:flex gap-4 h-full">
-            <select className="bg-gray-50 border border-gray-100 rounded-2xl px-6 font-semibold text-gray-600 outline-none focus:border-gold/50 cursor-pointer">
-              <option>Price Range</option>
-              <option>$500k – $1M</option>
-              <option>$1M – $5M</option>
-              <option>$5M+</option>
-            </select>
-            <select className="bg-gray-50 border border-gray-100 rounded-2xl px-6 font-semibold text-gray-600 outline-none focus:border-gold/50 cursor-pointer">
-              <option>Property Type</option>
-              <option>House</option>
-              <option>Apartment</option>
-              <option>Villa</option>
-            </select>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => openAuth('login')}
-            className="w-full md:w-auto bg-prime text-white px-10 py-5 rounded-2xl font-black text-lg hover:bg-gray-800 transition-colors shrink-0"
-          >
-            Search
-          </motion.button>
-        </motion.div>
-
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 pb-20">
         {/* Grid Categories */}
-        <div className="mt-24">
+        <div className="mt-20">
           <div className="flex items-center justify-between mb-10">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight text-gray-900">Explore by Category</h2>
             <button className="hidden md:flex items-center gap-2 font-bold text-gray-500 hover:text-prime transition-colors group">
@@ -434,9 +419,9 @@ const HomePage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: <Building size={32} strokeWidth={1.5} />, title: 'Urban Spaces', count: '124 Listings' },
-              { icon: <MapPin size={32} strokeWidth={1.5} />, title: 'Suburban', count: '86 Listings' },
-              { icon: <Home size={32} strokeWidth={1.5} />, title: 'Luxury Villas', count: '42 Listings' },
+              { icon: <Building size={24} strokeWidth={2} />, title: 'Urban Spaces', count: '124 Listings', image: "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&q=80&w=800" },
+              { icon: <MapPin size={24} strokeWidth={2} />, title: 'Suburban', count: '86 Listings', image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800" },
+              { icon: <Home size={24} strokeWidth={2} />, title: 'Luxury Villas', count: '42 Listings', image: "https://images.unsplash.com/photo-1613490908677-1e52dbb7dbf3?auto=format&fit=crop&q=80&w=800" },
             ].map((cat, idx) => (
               <motion.div
                 key={idx}
@@ -444,26 +429,38 @@ const HomePage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1, ...transition }}
-                whileHover={{ y: -5 }}
                 onClick={() => openAuth('signup')}
-                className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-xl hover:border-gold/20 transition-all cursor-pointer group"
+                className="relative h-[400px] rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-shadow cursor-pointer group"
               >
-                <div className="flex justify-between items-start mb-12">
-                  <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center text-prime group-hover:bg-prime group-hover:text-gold transition-colors duration-300">
-                    {cat.icon}
+                <img 
+                  src={cat.image} 
+                  alt={cat.title} 
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 z-0"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 z-0 group-hover:opacity-90 transition-opacity" />
+                
+                <div className="relative z-10 h-full p-8 flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-lg">
+                      {cat.icon}
+                    </div>
+                    <div className="w-10 h-10 rounded-full border border-white/30 flex items-center justify-center text-white/70 group-hover:bg-gold group-hover:border-gold group-hover:text-black transition-colors">
+                      <ArrowUpRight size={20} />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 group-hover:border-gold group-hover:text-gold transition-colors">
-                    <ArrowUpRight size={20} />
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-1 drop-shadow-md">{cat.title}</h3>
+                    <p className="font-bold text-gold text-sm tracking-widest uppercase">{cat.count}</p>
                   </div>
                 </div>
-                <h3 className="text-2xl font-black text-gray-900 mb-2">{cat.title}</h3>
-                <p className="font-semibold text-gray-400">{cat.count}</p>
               </motion.div>
             ))}
           </div>
         </div>
-
       </main>
+
+      <ScrollingTextSection />
+      <ContactSection />
       <Footer />
     </div>
   );

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Check, X, Clock, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const BuyRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -16,7 +17,14 @@ const BuyRequests = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/buy-requests');
+      const querySnapshot = await getDocs(collection(db, 'buyRequests'));
+      const data = querySnapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+      // Sort by createdAt descending
+      data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt).getTime();
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt).getTime();
+        return timeB - timeA;
+      });
       setRequests(data);
     } catch (error) {
       console.error('Failed to fetch buy requests', error);
@@ -27,8 +35,9 @@ const BuyRequests = () => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const { data } = await api.put(`/buy-requests/${id}`, { status: newStatus.toLowerCase() });
-      setRequests(requests.map(req => req._id === id ? data : req));
+      const statusToSet = newStatus.toLowerCase();
+      await updateDoc(doc(db, 'buyRequests', id), { status: statusToSet });
+      setRequests(requests.map(req => req._id === id ? { ...req, status: statusToSet } : req));
     } catch (error) {
       console.error('Failed to update request status', error);
     }
@@ -78,7 +87,7 @@ const BuyRequests = () => {
             >
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-1">
-                  <h3 className="text-lg font-bold text-gray-900">{request.userId?.name || 'Unknown User'}</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{request.userName || request.userId?.name || 'Unknown User'}</h3>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
                     request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     request.status === 'approved' ? 'bg-green-100 text-green-800' :
@@ -88,11 +97,11 @@ const BuyRequests = () => {
                   </span>
                 </div>
                 <div className="text-sm text-gray-500 flex items-center space-x-4">
-                  <span className="flex items-center"><Mail size={14} className="mr-1" /> {request.userId?.email || 'N/A'}</span>
+                  <span className="flex items-center"><Mail size={14} className="mr-1" /> {request.userEmail || request.userId?.email || 'N/A'}</span>
                   <span>•</span>
-                  <span className="font-medium text-gray-900">Property: {request.propertyId?.title || 'Unknown Property'}</span>
+                  <span className="font-medium text-gray-900">Property: {request.propertyTitle || request.propertyId?.title || 'Unknown Property'}</span>
                   <span>•</span>
-                  <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+                  <span>{request.createdAt?.toDate ? request.createdAt.toDate().toLocaleDateString() : new Date(request.createdAt).toLocaleDateString()}</span>
                 </div>
                 {request.message && (
                   <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded border border-gray-100">

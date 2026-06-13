@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, BedDouble, Bath, Square, Trash2 } from 'lucide-react';
 import api from '../api';
+import { propertyService } from '../services/propertyService';
 import { motion } from 'framer-motion';
 
 export default function Wishlist() {
@@ -21,7 +22,7 @@ export default function Wishlist() {
       setWishlistItems([]);
       return;
     }
-    api.get('/properties').then(({ data }) => {
+    propertyService.getAllProperties().then((data) => {
       setWishlistItems(data.filter(p => wishlistIds.includes(p._id)));
     }).catch(console.error);
   }, [wishlistIds]);

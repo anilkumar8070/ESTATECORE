@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X } from 'lucide-react';
 import api from '../api';
+import { propertyService } from '../services/propertyService';
 
 export default function Compare() {
   const [compareList, setCompareList] = useState([]);
 
   useEffect(() => {
-    api.get('/properties').then(({ data }) => setCompareList(data.slice(0, 3))).catch(console.error);
+    propertyService.getAllProperties().then((data) => setCompareList(data.slice(0, 3))).catch(console.error);
   }, []);
 
   return (

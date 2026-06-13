@@ -22,7 +22,10 @@ import {
   CheckCircle2,
   ArrowLeftRight
 } from 'lucide-react';
-import api from '../api';
+import { useAuth } from '../context/AuthContext';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { propertyService } from '../services/propertyService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PropertyDetails() {
@@ -38,6 +41,8 @@ export default function PropertyDetails() {
   const [persons, setPersons] = useState(1);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
+  const [reviews, setReviews] = useState([]);
+  const { currentUser } = useAuth();
 
   const [wishlist, setWishlist] = useState(() => {
     const saved = localStorage.getItem('estatecore_wishlist');
@@ -74,18 +79,24 @@ export default function PropertyDetails() {
   };
 
   useEffect(() => {
-    const fetchProperty = async () => {
+    const fetchPropertyAndReviews = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/properties/${id}`);
+        const data = await propertyService.getPropertyById(id);
         setProperty(data);
+
+        // Fetch real reviews
+        const q = query(collection(db, 'reviews'), where('propertyId', '==', id));
+        const querySnapshot = await getDocs(q);
+        const fetchedReviews = querySnapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+        setReviews(fetchedReviews);
       } catch (error) {
-        console.error('Failed to fetch property details:', error);
+        console.error('Failed to fetch property details or reviews:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchProperty();
+    fetchPropertyAndReviews();
   }, [id]);
 
   const resetSchedule = () => {
@@ -100,16 +111,19 @@ export default function PropertyDetails() {
 
   const handleBuyProperty = async () => {
     try {
-      const { data: users } = await api.get('/users');
-      const user = users.length > 0 ? users[0] : null;
-      if (!user) {
-        alert("No user found. Please sign in.");
+      if (!currentUser) {
+        alert("Please sign in to buy a property.");
         return;
       }
-      await api.post('/buy-requests', {
+      await addDoc(collection(db, 'buyRequests'), {
         propertyId: property._id,
-        userId: user._id,
-        message: `I am interested in buying ${property.title}`
+        propertyTitle: property.title,
+        userId: currentUser.uid,
+        userName: currentUser.fullName || currentUser.email,
+        userEmail: currentUser.email,
+        message: `I am interested in buying ${property.title}`,
+        status: 'pending',
+        createdAt: new Date().toISOString()
       });
       alert('Buy request submitted successfully!');
     } catch (error) {
@@ -121,16 +135,20 @@ export default function PropertyDetails() {
   const handleSubmitReview = async () => {
     try {
       if (!reviewComment.trim()) return alert("Please enter a review comment.");
-      const { data: users } = await api.get('/users');
-      const user = users.length > 0 ? users[0] : null;
-      if (!user) return alert("No user found. Please sign in.");
+      if (!currentUser) return alert("Please sign in to leave a review.");
       
-      await api.post('/reviews', {
+      const newReview = {
         propertyId: property._id,
-        userId: user._id,
+        propertyTitle: property.title,
+        userId: currentUser.uid,
+        userName: currentUser.fullName || currentUser.email,
         rating: reviewRating,
-        comment: reviewComment
-      });
+        comment: reviewComment,
+        createdAt: new Date().toISOString()
+      };
+      
+      const docRef = await addDoc(collection(db, 'reviews'), newReview);
+      setReviews([{ _id: docRef.id, ...newReview }, ...reviews]);
       alert('Review submitted successfully!');
       setReviewComment('');
       setReviewRating(5);
@@ -142,20 +160,19 @@ export default function PropertyDetails() {
 
   const handleConfirmVisit = async () => {
     try {
-      const { data: users } = await api.get('/users');
-      const user = users.length > 0 ? users[0] : null;
-      if (!user) return alert("No user found. Please sign in.");
+      if (!currentUser) return alert("Please sign in to schedule a visit.");
       
-      // selectedDate might be "Tomorrow, 10th", we need a real date or just store it.
-      // The backend expects a Date, let's just send the current date for simplicity if it fails parsing.
-      let parsedDate = new Date();
+      let parsedDate = new Date().toISOString();
       
-      await api.post('/visits', {
+      await addDoc(collection(db, 'visits'), {
         propertyId: property._id,
-        userId: user._id,
+        propertyTitle: property.title,
+        userId: currentUser.uid,
+        userName: currentUser.fullName || currentUser.email,
         date: parsedDate,
         time: selectedTime,
-        status: 'scheduled'
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
       });
       setScheduleStep(4);
     } catch (error) {
@@ -383,55 +400,37 @@ export default function PropertyDetails() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-              {/* Dummy Review 1 */}
-              <div className="bg-white border border-gray-100 p-6 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-gold/10 text-gold rounded-full flex items-center justify-center font-bold text-base shadow-sm">
-                      SM
+              {reviews.map(review => (
+                <div key={review._id} className="bg-white border border-gray-100 p-6 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-gold/10 text-gold rounded-full flex items-center justify-center font-bold text-base shadow-sm uppercase">
+                        {review.userName ? review.userName.charAt(0) : 'U'}
+                      </div>
+                      <div>
+                        <p className="text-gray-950 font-bold text-sm">{review.userName || 'Unknown User'}</p>
+                        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-gray-950 font-bold text-sm">Sarah Miller</p>
-                      <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Visited 2 weeks ago</p>
+                    <div className="flex text-[#c5a059]">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={12} className={i < review.rating ? "fill-[#c5a059]" : "text-gray-300"} />
+                      ))}
                     </div>
                   </div>
-                  <div className="flex text-[#c5a059]">
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="currentColor" />
-                  </div>
+                  <p className="text-gray-600 text-sm font-medium leading-relaxed">
+                    "{review.comment}"
+                  </p>
                 </div>
-                <p className="text-gray-600 text-sm font-medium leading-relaxed">
-                  "Absolutely stunning property. The natural light is even better than the photos. The agent was very professional during our tour. Highly considering making an offer."
-                </p>
-              </div>
-
-              {/* Dummy Review 2 */}
-              <div className="bg-white border border-gray-100 p-6 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-prime/5 text-prime rounded-full flex items-center justify-center font-bold text-base shadow-sm">
-                      JD
-                    </div>
-                    <div>
-                      <p className="text-gray-950 font-bold text-sm">James Davis</p>
-                      <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Visited 1 month ago</p>
-                    </div>
-                  </div>
-                  <div className="flex text-[#c5a059]">
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="currentColor" />
-                    <Star size={12} fill="transparent" />
-                  </div>
+              ))}
+              
+              {reviews.length === 0 && (
+                <div className="col-span-full py-8 text-center text-gray-400 font-medium">
+                  No reviews yet. Be the first to review!
                 </div>
-                <p className="text-gray-600 text-sm font-medium leading-relaxed">
-                  "Great location and solid construction. The layout is very practical. However, the parking situation might be a bit tight for a larger team. Still a top contender for us."
-                </p>
-              </div>
+              )}
             </div>
 
             {/* Leave a Review Form */}
